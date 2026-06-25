@@ -111,25 +111,11 @@ ai-infra-lab/
 ├── docker-compose.yml       # full stack definition
 ├── litellm_config.yaml      # model routing + Langfuse tracing config
 ├── SETUP.md                 # step-by-step setup walkthrough
-├── AI-Infra-Lab-Documentation.pdf   # full architecture + troubleshooting writeup
 └── data/                    # host-mounted persistent storage
     ├── ollama/
     ├── open-webui/
     └── qdrant/
 ```
-
----
-
-## 🩹 Real Problems, Real Fixes
-
-This wasn't a clean run — and the rough edges are documented, not hidden. The full
-troubleshooting log (PowerShell `curl` alias traps, JSON quoting gotchas, a YAML parser
-crash, OTel trace-flush delays, and a volume-naming mixup between `podman-compose` and
-`docker-compose.exe`) is captured in detail in
-[`AI-Infra-Lab-Documentation.pdf`](./AI-Infra-Lab-Documentation.pdf) — useful reading if
-you hit the same walls.
-
----
 
 ## 🔒 Security Notes
 
@@ -150,8 +136,6 @@ you hit the same walls.
 - [x] Migrated from named volumes to host-mounted storage
 - [ ] Open WebUI users/permissions + knowledge-base RAG test pass
 - [ ] Qdrant collection backup/restore drill
-- [ ] `k3s` learning track — same stack as Kubernetes manifests
-- [ ] Migration to a dedicated server/VPS with GPU passthrough + self-hosted Langfuse
 
 ---
 
@@ -161,7 +145,6 @@ MIT — see [`LICENSE`](./LICENSE).
 
 <div align="center">
 
-*Built as a hands-on infrastructure learning project — from bare containers to full
-observability, one debugged YAML file at a time.*
+*Built as a hands-on infrastructure learning project — from bare containers to full observability, one debugged YAML file at a time.*
 
 </div>
