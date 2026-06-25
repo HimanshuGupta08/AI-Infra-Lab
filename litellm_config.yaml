@@ -1,0 +1,20 @@
+model_list:
+  - model_name: local-llama
+    litellm_params:
+      model: ollama/llama3.2:3b
+      api_base: http://ollama:11434
+
+  - model_name: local-qwen-small
+    litellm_params:
+      model: ollama/qwen2.5:3b
+      api_base: http://ollama:11434
+
+litellm_settings:
+  drop_params: true
+  # Langfuse Cloud tracing - OTel-based callback (current recommended integration,
+  # works with Langfuse v3). The older success_callback option needs Langfuse SDK v2
+  # pinned and does not work with v3, so use this instead.
+  callbacks: ["langfuse_otel"]
+
+general_settings:
+  master_key: sk-local-master-changeme

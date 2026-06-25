@@ -1,0 +1,55 @@
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    volumes:
+      - ./data/ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    # no GPU flags — i3-5005U is CPU-only
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    depends_on:
+      - ollama
+      - qdrant
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=changeme-local-secret
+      - VECTOR_DB=qdrant
+      - QDRANT_URI=http://qdrant:6333
+    volumes:
+      - ./data/open-webui:/app/backend/data
+    ports:
+      - "3000:8080"
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    ports:
+      - "6333:6333"
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    depends_on:
+      - ollama
+    environment:
+      - LANGFUSE_PUBLIC_KEY=pk-lf-5f0a2179-fbb5-453f-aec0-94cd202b95c6
+      - LANGFUSE_SECRET_KEY=sk-lf-94c2c0f9-f9c0-4f5e-b7f3-218390d1fd18
+      - LANGFUSE_OTEL_HOST=https://cloud.langfuse.com
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+# Named volumes removed — ollama/open-webui/qdrant now use host bind mounts
+# under ./data/, so this section is no longer needed.
