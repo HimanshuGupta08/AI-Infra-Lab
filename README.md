@@ -1,4 +1,4 @@
-# AI Infra Lab — Local Setup (i3-5005U / 16GB / CPU-only)
+# AI Infra Lab — Local Setup
 
 ## 0. Prereqs — Podman (recommended for this hardware)
 - Install **Podman Desktop** for Windows (uses WSL2 under the hood, lighter VM than Docker Desktop).
