@@ -80,10 +80,3 @@ Self-hosted Langfuse needs Postgres + ClickHouse + Redis running alongside every
       - LANGFUSE_SECRET_KEY=sk-...
 ```
 4. `podman-compose up -d litellm` to restart with the new env. Every call routed through LiteLLM now traces to Langfuse Cloud — zero extra local load.
-
-## 9. When you move to a real server/VPS later
-Same compose file works as-is. Differences at that point:
-- Add `--gpus=all` (or device_requests) to Ollama if the box has a GPU.
-- Self-host Langfuse instead of cloud, since you'll have the RAM to spare.
-- Put Nginx in front of Open WebUI / LiteLLM if exposing beyond localhost, same pattern as your Drawitz stack — separate compose, don't touch this one's networking.
-- Swap `WEBUI_SECRET_KEY` and `master_key` for actual secrets — these are placeholder values for local-only use.
