@@ -41,8 +41,8 @@ services:
     depends_on:
       - ollama
     environment:
-      - LANGFUSE_PUBLIC_KEY=pk-lf-5f0a2179-fbb5-453f-aec0-94cd202b95c6
-      - LANGFUSE_SECRET_KEY=sk-lf-94c2c0f9-f9c0-4f5e-b7f3-218390d1fd18
+      - LANGFUSE_PUBLIC_KEY=pk-l
+      - LANGFUSE_SECRET_KEY=sk-l
       - LANGFUSE_OTEL_HOST=https://cloud.langfuse.com
     volumes:
       - ./litellm_config.yaml:/app/config.yaml
