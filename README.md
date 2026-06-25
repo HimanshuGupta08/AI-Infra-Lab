@@ -1,82 +1,167 @@
-# AI Infra Lab — Local Setup
+<div align="center">
 
-## 0. Prereqs — Podman (recommended for this hardware)
-- Install **Podman Desktop** for Windows (uses WSL2 under the hood, lighter VM than Docker Desktop).
-- It bundles `podman` CLI. Also install `podman-compose` for compose-file support:
-```bash
-pip install podman-compose --break-system-packages
+# 🧠 AI Infra Lab
+
+### Self-Hosted LLM Infrastructure — Built From Scratch, Running on a Laptop
+
+*Ollama &middot; Open WebUI &middot; Qdrant &middot; LiteLLM &middot; Langfuse*
+
+[![Container Engine](https://img.shields.io/badge/Container-Podman-892CA0?logo=podman&logoColor=white)](https://podman.io)
+[![Inference](https://img.shields.io/badge/Inference-Ollama-000000?logo=ollama&logoColor=white)](https://ollama.com)
+[![Vector DB](https://img.shields.io/badge/Vector%20DB-Qdrant-DC244C)](https://qdrant.tech)
+[![Gateway](https://img.shields.io/badge/Gateway-LiteLLM-1a73e8)](https://litellm.ai)
+[![Observability](https://img.shields.io/badge/Tracing-Langfuse-0a5dc2)](https://langfuse.com)
+[![License](https://img.shields.io/badge/License-MIT-green)](#license)
+
+**A fully self-hosted, locally-run AI platform** — chat UI, model gateway, vector search,
+and full request tracing, deployed entirely with containers on a CPU-only machine.
+No cloud inference. No API spend. Full visibility into every request.
+
+</div>
+
+---
+
+## 📐 Architecture
+
+```mermaid
+flowchart TD
+    U([User]) --> WEBUI[Open WebUI<br/>chat · RAG · users]
+    WEBUI -->|direct chat| OLLAMA[Ollama<br/>local inference]
+    WEBUI -->|gateway calls| LITELLM[LiteLLM<br/>OpenAI-compatible gateway]
+    WEBUI -->|vector search| QDRANT[(Qdrant<br/>vector DB)]
+    LITELLM --> OLLAMA
+    LITELLM -.->|future providers| CLOUD[OpenAI / Anthropic / etc.]
+    LITELLM -->|OTel traces| LANGFUSE[(Langfuse Cloud<br/>observability)]
+
+    style OLLAMA fill:#1a1a1a,color:#fff
+    style LITELLM fill:#1a73e8,color:#fff
+    style QDRANT fill:#DC244C,color:#fff
+    style LANGFUSE fill:#0a5dc2,color:#fff
+    style WEBUI fill:#2e8b57,color:#fff
 ```
-  (or use `podman compose` directly — recent Podman versions detect and proxy to podman-compose/docker-compose automatically if present)
-- Init + start the Podman machine (Windows needs a small VM, same as Docker, just leaner):
+
+Every container runs on a single private network with built-in DNS — services reach each
+other by container name (`http://ollama:11434`, `http://qdrant:6333`), never by `localhost`,
+which only works for host-to-container traffic.
+
+---
+
+## ⚙️ The Stack
+
+| Layer | Tool | Role |
+|---|---|---|
+| 🦙 **Inference** | [Ollama](https://ollama.com) | Runs LLMs and embedding models locally, CPU or GPU |
+| 💬 **Frontend** | [Open WebUI](https://openwebui.com) | Chat interface, user/permission management, RAG knowledge bases |
+| 🧮 **Vector Store** | [Qdrant](https://qdrant.tech) | Stores embeddings, powers RAG retrieval |
+| 🔀 **Gateway** | [LiteLLM](https://litellm.ai) | Unified OpenAI-compatible API across any model provider, virtual keys |
+| 🔍 **Observability** | [Langfuse](https://langfuse.com) | End-to-end request tracing — tokens, cost, latency, errors |
+| 📦 **Runtime** | [Podman](https://podman.io) | Daemonless, rootless containers — no background daemon eating RAM |
+
+---
+
+## 🚀 Quick Start
+
 ```bash
-podman machine init
-podman machine start
-```
-- Confirm: `podman --version` and `podman-compose --version`.
-- No memory cap step needed like Docker Desktop — no persistent daemon hogging RAM when idle. The `podman machine` VM itself is small; default is usually fine, but if you want to set it explicitly: `podman machine init --memory 6144` (MB) on first init.
-
-<details>
-<summary>If you'd rather use Docker Desktop instead</summary>
-
-- Docker Desktop for Windows, WSL2 backend (not Hyper-V — lighter on this hardware).
-- In Docker Desktop settings: cap memory at ~10-11GB (leave headroom for Windows itself), CPU = all 4 threads.
-- Confirm: `docker --version` and `docker compose version`.
-- Swap `podman-compose`/`podman` for `docker compose`/`docker` in every command below — same compose file works for both.
-</details>
-
-## 1. Bring up the stack
-```bash
+git clone <this-repo-url>
 cd ai-infra-lab
+
+# 1. Bring up the stack
 podman-compose up -d
-podman ps      # all 4 should show "running"
-```
 
-## 2. Pull small models (CPU-appropriate)
-```bash
+# 2. Pull models (CPU-friendly sizes)
 podman exec -it ollama ollama pull llama3.2:3b
-podman exec -it ollama ollama pull qwen2.5:3b
 podman exec -it ollama ollama pull nomic-embed-text   # for RAG
-```
-Stick to 1B-3B for anything you want to actually chat with at usable speed. Skip 7B+ unless you're fine with slow generation just to see it work once.
 
-## 3. Verify Ollama directly
-```bash
-curl.exe http://localhost:11434/api/generate -d '{"model":"llama3.2:3b","prompt":"say hi in 5 words"}'
+# 3. Open the chat UI
+# → http://localhost:3000  (first signup becomes admin)
 ```
 
-## 4. Verify Qdrant
-```bash
-curl.exe http://localhost:6333/collections
+Full step-by-step walkthrough — including Windows/PowerShell-specific commands — is in
+[`SETUP.md`](./SETUP.md).
+
+### Ports
+
+| Service | URL |
+|---|---|
+| Open WebUI | http://localhost:3000 |
+| LiteLLM Gateway | http://localhost:4000 |
+| Ollama API | http://localhost:11434 |
+| Qdrant | http://localhost:6333 |
+
+---
+
+## ✨ Highlights
+
+- 🖥️ **Runs entirely on CPU** — no GPU required. Tuned for small, fast models (1B–3B params).
+- 🔐 **Daemonless & rootless** via Podman — no persistent background service draining resources.
+- 📊 **Full observability out of the box** — every request through LiteLLM is automatically traced
+  in Langfuse: model, tokens, cost, latency, errors. Zero manual instrumentation.
+- 🗂️ **RAG-ready** — Qdrant + Open WebUI knowledge bases, fully wired for document Q&A.
+- 💾 **Host-mounted data** — all persistent state lives in plain folders on disk (`./data/`),
+  not buried in opaque container storage. Easy to inspect, back up, or move.
+- 🧩 **Provider-agnostic gateway** — LiteLLM means swapping or adding model providers later
+  (OpenAI, Anthropic, etc.) never requires touching the frontend.
+
+---
+
+## 📁 Project Structure
+
 ```
-Should return empty list, not an error.
-
-## 5. Verify LiteLLM
-```bash
-curl.exe http://localhost:4000/v1/chat/completions \
-  -H "Authorization: Bearer sk-local-master-changeme" \
-  -d '{"model":"local-llama","messages":[{"role":"user","content":"hi"}]}'
+ai-infra-lab/
+├── docker-compose.yml       # full stack definition
+├── litellm_config.yaml      # model routing + Langfuse tracing config
+├── SETUP.md                 # step-by-step setup walkthrough
+├── AI-Infra-Lab-Documentation.pdf   # full architecture + troubleshooting writeup
+└── data/                    # host-mounted persistent storage
+    ├── ollama/
+    ├── open-webui/
+    └── qdrant/
 ```
 
-## 6. Open WebUI
-- Go to `http://localhost:3000`, sign up — first account = admin automatically.
-- Settings → Connections: Ollama connection should already be live (`http://ollama:11434` via env var).
-- Optional second connection: add LiteLLM as an "OpenAI API" connection — Base URL `http://litellm:4000/v1`, API key `sk-local-master-changeme`. Note: from inside the open-webui container, use the container name `litellm`, not `localhost`.
-- Settings → Documents: set embedding model to `nomic-embed-text` (pulled in step 2).
-- Workspace → Knowledge → create a KB, upload a short doc, ask it a question only that doc would know the answer to. Confirms RAG is wired through Qdrant, not just the base model guessing.
+---
 
-## 7. Resource discipline (important on this hardware)
-- Don't load two models in Ollama at once — `ollama ps` to check what's resident, it'll auto-unload idle ones after a few minutes but watch RAM if you're impatient.
-- If things feel sluggish: `podman stats` to see which container is actually eating CPU/RAM before assuming it's the model.
-- When not actively using this, `podman-compose stop` (not `down` — keeps volumes/models) to give the laptop its RAM back.
+## 🩹 Real Problems, Real Fixes
 
-## 8. Langfuse — skip self-hosting here
-Self-hosted Langfuse needs Postgres + ClickHouse + Redis running alongside everything above — too heavy for this box. Use Langfuse Cloud free tier instead:
-1. Sign up at cloud.langfuse.com, create a project, grab public/secret keys.
-2. Uncomment `success_callback: ["langfuse"]` in `litellm_config.yaml`.
-3. Add to the `litellm` service in `docker-compose.yml`:
-```yaml
-    environment:
-      - LANGFUSE_PUBLIC_KEY=pk-...
-      - LANGFUSE_SECRET_KEY=sk-...
-```
-4. `podman-compose up -d litellm` to restart with the new env. Every call routed through LiteLLM now traces to Langfuse Cloud — zero extra local load.
+This wasn't a clean run — and the rough edges are documented, not hidden. The full
+troubleshooting log (PowerShell `curl` alias traps, JSON quoting gotchas, a YAML parser
+crash, OTel trace-flush delays, and a volume-naming mixup between `podman-compose` and
+`docker-compose.exe`) is captured in detail in
+[`AI-Infra-Lab-Documentation.pdf`](./AI-Infra-Lab-Documentation.pdf) — useful reading if
+you hit the same walls.
+
+---
+
+## 🔒 Security Notes
+
+- All credentials in this repo's tracked files are **placeholders**. Real keys are
+  supplied via local environment overrides and are never committed.
+- Rotate any key immediately if it's ever pasted into a chat tool, ticket, or log —
+  treat it as compromised regardless of context.
+- This setup is built for **local learning use**. Before exposing any service beyond
+  `localhost`, put a reverse proxy (e.g. Nginx) in front and replace every default
+  secret in `docker-compose.yml` / `litellm_config.yaml`.
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Ollama + Open WebUI + Qdrant + LiteLLM wired together
+- [x] Langfuse Cloud tracing via LiteLLM's OTel callback
+- [x] Migrated from named volumes to host-mounted storage
+- [ ] Open WebUI users/permissions + knowledge-base RAG test pass
+- [ ] Qdrant collection backup/restore drill
+- [ ] `k3s` learning track — same stack as Kubernetes manifests
+- [ ] Migration to a dedicated server/VPS with GPU passthrough + self-hosted Langfuse
+
+---
+
+## 📜 License
+
+MIT — see [`LICENSE`](./LICENSE).
+
+<div align="center">
+
+*Built as a hands-on infrastructure learning project — from bare containers to full
+observability, one debugged YAML file at a time.*
+
+</div>
